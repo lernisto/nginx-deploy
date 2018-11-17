@@ -12,11 +12,18 @@ env = Environment(
 @click.command()
 @click.argument("domain")
 @click.argument("sitename")
-def newsite(domain,sitename):
+@click.option('-t','--target',default=None)
+@click.option('-n/','--dryrun/--live',default=False)
+def newsite(domain,sitename,target,dryrun):
+    if target is None:
+        target = '/' if os.getuid()==0 else '.'
+
+    live = not dryrun
+
     slug = encode(os.urandom(9)).decode('ascii')
     click.echo(slug)
-    docroot = os.path.join("var/www/{}/public".format(slug))
-    siteetc = "etc/nginx/sites-available"
+    docroot = os.path.join(target,'var/www/',slug,'public')
+    siteetc = os.path.join(target,"etc/nginx/sites-available")
 
     l = locals().copy()
     print(l)
@@ -26,9 +33,14 @@ def newsite(domain,sitename):
         ft = Template(target)
         l['template']=template
         path = ft.render(**l)
-        os.makedirs(os.path.dirname(path),exist_ok=True)
+        if live:
+            os.makedirs(os.path.dirname(path),exist_ok=True)
+        else:
+            print("mkdir -p '{}'".format(path))
+
         text = env.get_template(template).render(**l)
-        print(path)
-        print(text)
-        with open(path,"w") as of:
-            of.write(text)
+        if live:
+            with open(path,"w") as of:
+                of.write(text)
+        else:
+            print('''cat >'{}' <<EOF\n{}\nEOF'''.format(path,text))
