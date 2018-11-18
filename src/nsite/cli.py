@@ -26,7 +26,6 @@ def newsite(domain,sitename,target,dryrun):
     siteetc = os.path.join(target,"etc/nginx/sites-available")
 
     l = locals().copy()
-    print(l)
     for template,target in (('index.html','{{docroot}}/{{template}}'),
                             ('site.nginx', '{{siteetc}}/{{domain}}'),
                             ):
